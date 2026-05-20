@@ -10,7 +10,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dbConnect from "./app/config/dbConnect.js";
-// import userRoutes from "./app/modules/user/routes.js";
+import userRoutes from "./app/modules/user/routes.js";
 // import verificationRoutes from "./app/modules/verification/routes.js";
 // import teamRoutes from "./app/modules/team/route.js";
 // import transactionRoutes from "./app/modules/transaction/routes.js";
@@ -34,7 +34,7 @@ dbConnect();
 
 // ✅ Routes
 // app.use("/api/verify", verificationRoutes);
-// app.use("/api/user", userRoutes);
+app.use("/api/user", userRoutes);
 // app.use("/api/team", teamRoutes);
 // app.use("/api/v1/", transactionRoutes);
 // app.use("/api/v1/", accountActivationRoutes);
