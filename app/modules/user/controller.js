@@ -1,5 +1,6 @@
 import User from "./model.js";
 import bcrypt from "bcryptjs";
+import {getUniqueName} from "../../utils/getUniqueUserName.js";
 import { jwtTokenGenerator } from "../../utils/generateJWTtoken.js";
 
 // Helper for consistent response format
@@ -27,24 +28,22 @@ export const RegisterUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const baseUserName = await getUniqueName(name);
     const newUser = await User.create({
       name,
+      userName: baseUserName,
       email,
       password: hashedPassword,
       profileUrl: profileUrl || null,
       updatedAt: Date.now(),
     });
 
-
-
-    // JWT Token
     const token = jwtTokenGenerator(newUser._id);
-
-    // return user data
     const userData = {
       id: newUser._id,
       name: newUser.name,
       email: newUser.email,
+      userName: newUser.userName,
       token,
       profileUrl: newUser.profileUrl,
       createdAt: newUser.createdAt,
