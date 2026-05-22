@@ -10,6 +10,11 @@ const expenseSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    paymentType: {
+        type: String,
+        enum: ['cash', 'card', 'online'],
+        required: true,
+    },
     amount: {
         type: Number,
         required: true,

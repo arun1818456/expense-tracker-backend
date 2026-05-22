@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import dbConnect from "./app/config/dbConnect.js";
 import userRoutes from "./app/modules/user/routes.js";
 import expenseRoutes from "./app/modules/expense/routes.js";
+import groupRoutes from "./app/modules/group/routes.js";
 import http from "http";
 mongoose.set("strictQuery", true);
 
@@ -21,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 dbConnect();
 app.use("/api/user", userRoutes);
 app.use("/api/expense", expenseRoutes);
+app.use("/api/group", groupRoutes);
 
 // // ✅ Initialize Socket.io
 const server = http.createServer(app);

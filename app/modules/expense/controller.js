@@ -4,17 +4,18 @@ import { sendResponse } from '../../utils/sendResposeType.js';
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
   try {
-    const { title, amount, date, category } = req.body || {};
-    if (!title || !amount || !date || !category) {
+    const { title, amount, date, category, paymentType } = req.body || {};
+    if (!title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
-    console.log("Creating expense with data:", { title, amount, date, category , userId: req.user.id });
+    console.log("Creating expense with data:", { title, amount, date, category, paymentType, userId: req.user.id });
     const newExpense = await Expense.create({
         userId: req.user.id,
         title,
         amount,
         date, 
         category,
+        paymentType,
     });
     return sendResponse(res, 200, true, "Expense created successfully", newExpense);
   } catch (error) {
@@ -27,9 +28,9 @@ export const createExpense = async (req, res) => {
 export const updateExpense = async (req, res) => {
   try {
     console.log("📥 Update expense request received:", req.body||{});
-    const { expenseId, title, amount, date, category } = req.body || {};
+    const { expenseId, title, amount, date, category, paymentType } = req.body || {};
 
-    if (!expenseId || !title || !amount || !date || !category) {
+    if (!expenseId || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "all fields are required to update expense");
     }
 
@@ -39,6 +40,7 @@ export const updateExpense = async (req, res) => {
       ...(amount && { amount }),
       ...(date && { date }),
       ...(category && { category }),
+      ...(paymentType && { paymentType }),
     };
 
     const updatedExpense = await Expense.findByIdAndUpdate(expenseId, updateExpense, { new: true });
@@ -49,6 +51,7 @@ export const updateExpense = async (req, res) => {
       amount: updatedExpense.amount,
       date: updatedExpense.date,
       category: updatedExpense.category,
+      paymentType: updatedExpense.paymentType,
     };
 
     return sendResponse(res, 200, true, "Expense updated successfully", expenseData);
