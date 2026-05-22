@@ -1,13 +1,10 @@
 import express from 'express';
 import auth from "../../middleWare/authWare.js";
-import { createExpense } from './controller.js';
+import { createExpense ,updateExpense ,deleteExpense,getAllExpenses} from './controller.js';
 
 const router = express.Router();
-router.post('/create', createExpense);
-// router.post('/login', loginUser);
-// router.put('/update', auth, updateUser);
-// router.post('/logout', auth, logoutUser);
-// router.post('/google', googleLoginUser);
-// router.get('/details', auth, getUserDetails);
-
+router.post('/add', auth, createExpense);
+router.put('/update', auth, updateExpense);
+router.delete('/delete/:expenseId', auth, deleteExpense);
+router.get('/all', auth, getAllExpenses);
 export default router;

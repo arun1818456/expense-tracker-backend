@@ -1,38 +1,35 @@
 import mongoose from 'mongoose';
 
 const expenseSchema = new mongoose.Schema({
+    userId : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
     title: {
         type: String,
         required: true,
     },
-    userName: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    deviceToken: {
-        type: String,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
+    amount: {
+        type: Number,
         required: true,
     },
-    profileUrl: {
-        type: String,
-    },
-    createdAt: {
+    date: {
         type: Date,
-        default: Date.now,
+        required: true,
+    },
+    category: {
+        type: String,
+        required: true,
+    },
+    groupId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group',
     },
 }, {
     versionKey: false,
 });
 
-const User = mongoose.model('User', userSchema);
+const Expense = mongoose.model('Expense', expenseSchema);
 
-export default User;
+export default Expense;

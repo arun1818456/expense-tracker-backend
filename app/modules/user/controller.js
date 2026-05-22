@@ -2,11 +2,8 @@ import User from "./model.js";
 import bcrypt from "bcryptjs";
 import {getUniqueName} from "../../utils/getUniqueUserName.js";
 import { jwtTokenGenerator } from "../../utils/generateJWTtoken.js";
+import { sendResponse } from "../../utils/sendResposeType.js";
 
-// Helper for consistent response format
-const sendResponse = (res, status, success, message, data = null, error = null) => {
-  return res.status(status).json({ success, message, data, error });
-};
 
 // ✅ REGISTER USER
 export const RegisterUser = async (req, res) => {
@@ -116,7 +113,7 @@ export const updateUser = async (req, res) => {
     const { name, profileUrl } = req.body || {};
 
     if (!name) {
-      return sendResponse(res, 400, false, "At least one field is required to update");
+      return sendResponse(res, 400, false, "Name is required to update");
     }
 
 
