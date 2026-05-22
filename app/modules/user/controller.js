@@ -193,3 +193,25 @@ export const getUserDetails = async (req, res) => {
     return sendResponse(res, 500, false, "Error fetching user details", null, error.message);
   }
 };
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) {
+      return sendResponse(res, 400, false, "Email is required");
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return sendResponse(res, 404, false, "User with this email does not exist");
+    }
+
+    // Here you would typically generate a password reset token and send an email to the user
+    // For simplicity, we'll just return a success message
+
+    return sendResponse(res, 200, true, "Password reset instructions sent to your email (simulated)");
+  } catch (error) {
+    console.error(error);
+    return sendResponse(res, 500, false, "Error processing forgot password request", null, error.message);
+  }
+};
