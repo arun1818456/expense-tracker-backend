@@ -9,6 +9,9 @@
         description: {
             type: String,
         },
+        profilePic: {
+            type: String,
+        },
         members: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
