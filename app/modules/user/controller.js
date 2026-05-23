@@ -3,13 +3,13 @@ import bcrypt from "bcryptjs";
 import {getUniqueName} from "../../utils/getUniqueUserName.js";
 import { jwtTokenGenerator } from "../../utils/generateJWTtoken.js";
 import { sendResponse } from "../../utils/sendResposeType.js";
-
+import { addExpenseWithoutLogging } from "../../utils/addExpenseWithoutLogging.js";
 
 // ✅ REGISTER USER
 export const RegisterUser = async (req, res) => {
   try {
     console.log("📥 Register user request received:", req.body||{});
-    let { name, email, password, profileUrl } = req.body;
+    let { name, email, password, profileUrl ,expenseList=[]} = req.body;
 
     // sanitize
     email = email?.trim()?.toLowerCase();
@@ -35,6 +35,9 @@ export const RegisterUser = async (req, res) => {
       updatedAt: Date.now(),
     });
 
+   addExpenseWithoutLogging(newUser._id, expenseList || []);
+
+
     const token = jwtTokenGenerator(newUser._id);
     const userData = {
       id: newUser._id,
@@ -57,7 +60,7 @@ export const RegisterUser = async (req, res) => {
 // ✅ LOGIN USER
 export const loginUser = async (req, res) => {
   try {
-    const { email, password, deviceToken } = req.body || {};
+    const { email, password, deviceToken ,expenseList} = req.body || {};
 
     if (!email || !password) {
       return sendResponse(res, 400, false, "Email and password are required");
@@ -70,6 +73,7 @@ export const loginUser = async (req, res) => {
     if (!isMatch) return sendResponse(res, 400, false, "Invalid email or password");
 
     user.deviceToken = deviceToken || user.deviceToken;
+    user.expenseList = expenseList || user.expenseList;
     await user.save();
 
     const token = jwtTokenGenerator(user._id);
