@@ -160,11 +160,12 @@ export const googleLoginUser = async (req, res) => {
 
     // 🔎 Check user exists
     let user = await User.findOne({ email });
-
+ const baseUserName = await getUniqueName(name);
     // 🔥 If NEW Google user → create new account
     if (!user) {
       user = await User.create({
         name,
+        userName: baseUserName,
         email,
         password: "google_oauth_dummy_passwordW$^%&R^&Y*U(", // dummy password
         profileUrl: profileUrl || null,
