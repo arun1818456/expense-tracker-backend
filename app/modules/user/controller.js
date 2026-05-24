@@ -219,3 +219,19 @@ export const forgotPassword = async (req, res) => {
     return sendResponse(res, 500, false, "Error processing forgot password request", null, error.message);
   }
 };
+
+export const searchUser = async (req, res) => {
+  try {
+    const { query } = req.params || {};
+    if (!query) {
+      return sendResponse(res, 400, false, "Search query is required");
+    }
+    const users = await User.find({
+      userName: { $regex: query, $options: "i" },
+    }).select("name email profileUrl userName");
+    return sendResponse(res, 200, true, "User search results", users);
+  } catch (error) {
+    console.error(error);
+    return sendResponse(res, 500, false, "Error searching users", null, error.message);
+  }
+};

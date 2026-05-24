@@ -8,7 +8,7 @@ export const createGroup = async (req, res) => {
     try {
         console.log("📥 Create group request received:", req.body || {});
         console.log("user id is", req.user.id);
-        let { name, description, members, profilePic } = req.body;
+        let { name, description, members, profilePic,isPrivate, isNotification } = req.body;
 
         if (!name || members === undefined || !Array.isArray(members)) {
             return sendResponse(res, 400, false, "Error creating group: 'name' and 'members' (array) are required");
@@ -18,6 +18,8 @@ export const createGroup = async (req, res) => {
             description,
             members: [req.user.id, ...members],
             profilePic,
+            isPrivate,
+            isNotification,
             updatedAt: Date.now(),
         });
 
@@ -31,7 +33,7 @@ export const createGroup = async (req, res) => {
 export const updateGroup = async (req, res) => {
     try {
         console.log("📥 Update group request received:", req.body || {});
-        const { groupId, name, description, members, profilePic } = req.body;
+        const { groupId, name, description, members, profilePic, isPrivate, isNotification } = req.body;
 
         if (!groupId) {
             return sendResponse(res, 400, false, "Error updating group: 'groupId' is required");
@@ -50,6 +52,8 @@ export const updateGroup = async (req, res) => {
         if (name) group.name = name;
         if (description) group.description = description;
         if (profilePic) group.profilePic = profilePic;
+        if (isPrivate !== undefined) group.isPrivate = isPrivate;
+        if (isNotification !== undefined) group.isNotification = isNotification;
         if (members && Array.isArray(members)) {
             // Ensure the current user remains a member
             group.members = Array.from(new Set([req.user.id, ...members]));
