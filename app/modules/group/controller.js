@@ -2,7 +2,7 @@
 import Group from "./model.js";
 import { sendResponse } from "../../utils/sendResposeType.js";
 import e from "express";
-
+import Expense from "../expense/model.js";
 // ✅ CREATE GROUP
 export const createGroup = async (req, res) => {
     try {
@@ -72,7 +72,13 @@ export const getGroups = async (req, res) => {
     try {
         console.log("📥 Get groups request received for user:", req.user.id);
 
-        const groups = await Group.find({ members: req.user.id });
+        const groups = await Group.find({ members: req.user.id }).populate('members', 'name email profilePic');
+        // add key for my expense Spend on this group
+        for (const group of groups) {
+            const expenses = await Expense.find({ groupId: group._id, userId: req.user.id });
+            const myExpenseSpend = expenses.reduce((total, expense) => total + expense.amount, 0);
+            group._doc.myExpenseSpend = myExpenseSpend; // add myExpenseSpend to the group object
+        }
         return sendResponse(res, 200, true, "Groups fetched successfully", groups);
     } catch (error) {
         console.error(error);
@@ -103,5 +109,33 @@ export const deleteGroup = async (req, res) => {
     } catch (error) {
         console.error(error);
         return sendResponse(res, 500, false, "Error deleting group", null, error.message);
+    }
+};
+
+export const getGroupDetails = async (req, res) => {
+    try {
+        console.log("📥 Get group details request received:", req.params || {});
+        const { groupId } = req.params;
+
+        if (!groupId) {
+            return sendResponse(res, 400, false, "Error fetching group details: 'groupId' is required");
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return sendResponse(res, 404, false, "Group not found");
+        }
+
+        // Check if the user is a member of the group
+        if (!group.members.includes(req.user.id)) {
+            return sendResponse(res, 403, false, "You are not authorized to view this group");
+        }
+        const expenses = await Expense.find({ groupId: group._id }).populate('userId', 'name email profileUrl');
+        group._doc.expenses = expenses;
+        const populatedGroup = await group.populate('members', 'name email profileUrl');
+        return sendResponse(res, 200, true, "Group details fetched successfully", populatedGroup);
+
+    } catch (error) {
+        console.error(error);
+        return sendResponse(res, 500, false, "Error fetching group details", null, error.message);
     }
 };
