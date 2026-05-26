@@ -4,31 +4,32 @@ import { sendResponse } from '../../utils/sendResposeType.js';
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
   try {
-    const { title, amount, date, category, paymentType , description } = req.body || {};
-    if (!title || !amount || !date || !category || !paymentType) {
+    const { id, title, amount, date, category, paymentType, description } = req.body || {};
+    if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
-    console.log("Creating expense with data:", { title, amount, date, category, paymentType, description, userId: req.user.id });
+    console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, userId: req.user.id });
     const newExpense = await Expense.create({
-        userId: req.user.id,
-        title,
-        amount,
-        date, 
-        category,
-        paymentType,
-        description,
+      _id: id,
+      userId: req.user.id,
+      title,
+      amount,
+      date,
+      category,
+      paymentType,
+      description,
     });
     return sendResponse(res, 200, true, "Expense created successfully", newExpense);
   } catch (error) {
     console.error(error);
     return sendResponse(res, 500, false, "Error creating expense", null, error.message);
-  } 
+  }
 };
 
 // ✅ UPDATE EXPENSE
 export const updateExpense = async (req, res) => {
   try {
-    console.log("📥 Update expense request received:", req.body||{});
+    console.log("📥 Update expense request received:", req.body || {});
     const { expenseId, title, amount, date, category, paymentType, description } = req.body || {};
 
     if (!expenseId || !title || !amount || !date || !category || !paymentType) {
@@ -62,13 +63,13 @@ export const updateExpense = async (req, res) => {
     console.error(error);
     return sendResponse(res, 500, false, "Error updating expense", null, error.message);
 
-    };
+  };
 };
 
 // ✅ DELETE EXPENSE
 export const deleteExpense = async (req, res) => {
   try {
-    console.log("📥 Delete expense request received:", req.body||{});
+    console.log("📥 Delete expense request received:", req.body || {});
     const { expenseId } = req.params || {};
 
     if (!expenseId) {
@@ -81,7 +82,7 @@ export const deleteExpense = async (req, res) => {
   } catch (error) {
     console.error(error);
     return sendResponse(res, 500, false, "Error deleting expense", null, error.message);
-    };
+  };
 }
 
 export const getAllExpenses = async (req, res) => {
