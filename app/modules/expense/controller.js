@@ -4,11 +4,11 @@ import { sendResponse } from '../../utils/sendResposeType.js';
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
   try {
-    const { id, title, amount, date, category, paymentType, description } = req.body || {};
+    const { id, title, amount, date, category, paymentType, description ,groupId} = req.body || {};
     if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
-    console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, userId: req.user.id });
+    console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, groupId, userId: req.user.id });
     const newExpense = await Expense.create({
       _id: id,
       userId: req.user.id,
@@ -18,6 +18,7 @@ export const createExpense = async (req, res) => {
       category,
       paymentType,
       description,
+      groupId,
     });
     return sendResponse(res, 200, true, "Expense created successfully", newExpense);
   } catch (error) {
@@ -30,7 +31,7 @@ export const createExpense = async (req, res) => {
 export const updateExpense = async (req, res) => {
   try {
     console.log("📥 Update expense request received:", req.body || {});
-    const { expenseId, title, amount, date, category, paymentType, description } = req.body || {};
+    const { expenseId, title, amount, date, category, paymentType, description, groupId } = req.body || {};
 
     if (!expenseId || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "all fields are required to update expense");
@@ -44,6 +45,7 @@ export const updateExpense = async (req, res) => {
       ...(category && { category }),
       ...(paymentType && { paymentType }),
       ...(description && { description }),
+      ...(groupId && { groupId }),
     };
 
     const updatedExpense = await Expense.findByIdAndUpdate(expenseId, updateExpense, { new: true });
@@ -56,6 +58,7 @@ export const updateExpense = async (req, res) => {
       category: updatedExpense.category,
       paymentType: updatedExpense.paymentType,
       description: updatedExpense.description,
+      groupId: updatedExpense.groupId,
     };
 
     return sendResponse(res, 200, true, "Expense updated successfully", expenseData);
