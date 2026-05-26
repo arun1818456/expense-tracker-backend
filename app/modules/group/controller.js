@@ -8,7 +8,7 @@ export const createGroup = async (req, res) => {
     try {
         console.log("📥 Create group request received:", req.body || {});
         console.log("user id is", req.user.id);
-        let { name, description, members, profilePic,isPrivate, isNotification } = req.body;
+        let { name, description, members, profileUrl,isPrivate, isNotification } = req.body;
 
         if (!name || members === undefined || !Array.isArray(members)) {
             return sendResponse(res, 400, false, "Error creating group: 'name' and 'members' (array) are required");
@@ -17,13 +17,14 @@ export const createGroup = async (req, res) => {
             name,
             description,
             members: [req.user.id, ...members],
-            profilePic,
+            profileUrl,
             isPrivate,
             isNotification,
             updatedAt: Date.now(),
         });
 
-        return sendResponse(res, 200, true, "Group created successfully", newGroup);
+        const populatedGroup = await newGroup.populate('members', 'name email profileUrl');
+        return sendResponse(res, 200, true, "Group created successfully", populatedGroup);
     } catch (error) {
         console.error(error);
         return sendResponse(res, 500, false, "Error creating group", null, error.message);
@@ -33,7 +34,7 @@ export const createGroup = async (req, res) => {
 export const updateGroup = async (req, res) => {
     try {
         console.log("📥 Update group request received:", req.body || {});
-        const { groupId, name, description, members, profilePic, isPrivate, isNotification } = req.body;
+        const { groupId, name, description, members, profileUrl, isPrivate, isNotification } = req.body;
 
         if (!groupId) {
             return sendResponse(res, 400, false, "Error updating group: 'groupId' is required");
@@ -51,7 +52,7 @@ export const updateGroup = async (req, res) => {
         // Update fields if provided
         if (name) group.name = name;
         if (description) group.description = description;
-        if (profilePic) group.profilePic = profilePic;
+        if (profileUrl) group.profileUrl = profileUrl;
         if (isPrivate !== undefined) group.isPrivate = isPrivate;
         if (isNotification !== undefined) group.isNotification = isNotification;
         if (members && Array.isArray(members)) {
@@ -61,7 +62,8 @@ export const updateGroup = async (req, res) => {
         group.updatedAt = Date.now();
 
         await group.save();
-        return sendResponse(res, 200, true, "Group updated successfully", group);
+        const populatedGroup = await group.populate('members', 'name email profileUrl');
+        return sendResponse(res, 200, true, "Group updated successfully", populatedGroup);
     } catch (error) {
         console.error(error);
         return sendResponse(res, 500, false, "Error updating group", null, error.message);
@@ -72,7 +74,7 @@ export const getGroups = async (req, res) => {
     try {
         console.log("📥 Get groups request received for user:", req.user.id);
 
-        const groups = await Group.find({ members: req.user.id }).populate('members', 'name email profilePic');
+        const groups = await Group.find({ members: req.user.id }).populate('members', 'name email profileUrl');
         // add key for my expense Spend on this group
         for (const group of groups) {
             const expenses = await Expense.find({ groupId: group._id, userId: req.user.id });

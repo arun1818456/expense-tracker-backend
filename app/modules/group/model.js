@@ -9,7 +9,7 @@
         description: {
             type: String,
         },
-        profilePic: {
+        profileUrl: {
             type: String,
         },
         members: [{
