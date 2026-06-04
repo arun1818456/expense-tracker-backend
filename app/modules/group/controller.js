@@ -8,7 +8,7 @@ export const createGroup = async (req, res) => {
     try {
         console.log("📥 Create group request received:", req.body || {});
         console.log("user id is", req.user.id);
-        let { name, description, members, profileUrl,isPrivate, isNotification } = req.body;
+        let { name, description, members, profileUrl, isPrivate, isNotification } = req.body;
 
         if (!name || members === undefined || !Array.isArray(members)) {
             return sendResponse(res, 400, false, "Error creating group: 'name' and 'members' (array) are required");
@@ -139,5 +139,53 @@ export const getGroupDetails = async (req, res) => {
     } catch (error) {
         console.error(error);
         return sendResponse(res, 500, false, "Error fetching group details", null, error.message);
+    }
+};
+
+export const setNotificationValue = async (req, res) => {
+    try {
+        console.log("📥 Set notification value request received:", req.body || {});
+        const { groupId, isNotification } = req.body;
+        if (!groupId || isNotification === undefined) {
+            return sendResponse(res, 400, false, "Error updating notification setting: 'groupId' and 'isNotification' are required");
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return sendResponse(res, 404, false, "Group not found");
+        }
+        // Check if the user is a member of the group
+        if (!group.members.includes(req.user.id)) {
+            return sendResponse(res, 403, false, "You are not authorized to update this group");
+        }
+        group.isNotification = isNotification;
+        await group.save();
+        return sendResponse(res, 200, true, "Notification setting updated successfully", { groupId, isNotification });
+    } catch (error) {
+        console.error(error);
+        return sendResponse(res, 500, false, "Error updating notification setting", null, error.message);
+    }
+};
+
+export const setPrivateValue = async (req, res) => {
+    try {
+        console.log("📥 Set private value request received:", req.body || {});
+        const { groupId, isPrivate } = req.body;
+        if (!groupId || isPrivate === undefined) {
+            return sendResponse(res, 400, false, "Error updating private setting: 'groupId' and 'isPrivate' are required");
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return sendResponse(res, 404, false, "Group not found");
+        }
+        // Check if the user is a member of the group
+        if (!group.members.includes(req.user.id)) {
+            return sendResponse(res, 403, false, "You are not authorized to update this group");
+        }
+        group.isPrivate = isPrivate;
+        await group.save();
+        return sendResponse(res, 200, true, "Private setting updated successfully", { groupId, isPrivate });
+    } catch (error) {
+        console.error(error);
+        return sendResponse(res, 500, false, "Error updating private setting", null, error.message);
     }
 };

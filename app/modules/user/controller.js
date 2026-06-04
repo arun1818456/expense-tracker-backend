@@ -1,6 +1,6 @@
 import User from "./model.js";
 import bcrypt from "bcryptjs";
-import {getUniqueName} from "../../utils/getUniqueUserName.js";
+import { getUniqueName } from "../../utils/getUniqueUserName.js";
 import { jwtTokenGenerator } from "../../utils/generateJWTtoken.js";
 import { sendResponse } from "../../utils/sendResposeType.js";
 import { addExpenseWithoutLogging } from "../../utils/addExpenseWithoutLogging.js";
@@ -8,8 +8,8 @@ import { addExpenseWithoutLogging } from "../../utils/addExpenseWithoutLogging.j
 // ✅ REGISTER USER
 export const RegisterUser = async (req, res) => {
   try {
-    console.log("📥 Register user request received:", req.body||{});
-    let { name, email, password, profileUrl ,expenseList=[]} = req.body;
+    console.log("📥 Register user request received:", req.body || {});
+    let { name, email, password, profileUrl, expenseList = [] } = req.body;
 
     // sanitize
     email = email?.trim()?.toLowerCase();
@@ -35,19 +35,15 @@ export const RegisterUser = async (req, res) => {
       updatedAt: Date.now(),
     });
 
-   addExpenseWithoutLogging(newUser._id, expenseList || []);
-
+    addExpenseWithoutLogging(newUser._id, expenseList || []);
 
     const token = jwtTokenGenerator(newUser._id);
+    const userObj = newUser.toObject();
+    delete userObj.password;
+
     const userData = {
-      id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      userName: newUser.userName,
       token,
-      profileUrl: newUser.profileUrl,
-      createdAt: newUser.createdAt,
-      updatedAt: newUser.updatedAt,
+      ...userObj,
     };
 
     return sendResponse(res, 200, true, "User registered successfully", userData);
@@ -60,7 +56,7 @@ export const RegisterUser = async (req, res) => {
 // ✅ LOGIN USER
 export const loginUser = async (req, res) => {
   try {
-    const { email, password, deviceToken ,expenseList} = req.body || {};
+    const { email, password, deviceToken, expenseList } = req.body || {};
 
     if (!email || !password) {
       return sendResponse(res, 400, false, "Email and password are required");
@@ -77,16 +73,12 @@ export const loginUser = async (req, res) => {
     await user.save();
 
     const token = jwtTokenGenerator(user._id);
+    const userObj = user.toObject();
+    delete userObj.password;
 
     const userData = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
       token,
-      profileUrl: user.profileUrl,
-      deviceToken: user.deviceToken,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      ...userObj,
     };
 
     return sendResponse(res, 200, true, "Login successful", userData);
@@ -113,7 +105,7 @@ export const logoutUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log("📥 Update user request received:", req.body||{});
+    console.log("📥 Update user request received:", req.body || {});
     const { name, profileUrl } = req.body || {};
 
     if (!name) {
@@ -127,19 +119,11 @@ export const updateUser = async (req, res) => {
       updatedAt: Date.now(),
     };
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+    const userObj = updatedUser.toObject();
+    delete userObj.password;
 
-
-    const userData = {
-      id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      profileUrl: updatedUser.profileUrl,
-      deviceToken: updatedUser.deviceToken,
-      createdAt: updatedUser.createdAt,
-    };
-
-    return sendResponse(res, 200, true, "User updated successfully", userData);
+    return sendResponse(res, 200, true, "User updated successfully", ...userObj);
   } catch (error) {
     console.error(error);
     return sendResponse(res, 500, false, "Error updating user", null, error.message);
@@ -160,7 +144,7 @@ export const googleLoginUser = async (req, res) => {
 
     // 🔎 Check user exists
     let user = await User.findOne({ email });
- const baseUserName = await getUniqueName(name);
+    const baseUserName = await getUniqueName(name);
     // 🔥 If NEW Google user → create new account
     if (!user) {
       user = await User.create({

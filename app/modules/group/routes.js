@@ -1,13 +1,15 @@
 import express from 'express';
 import auth from "../../middleWare/authWare.js";
-import { createGroup, updateGroup, getGroups, deleteGroup ,getGroupDetails} from './controller.js';
+import { createGroup, updateGroup, getGroups, deleteGroup, getGroupDetails, setNotificationValue, setPrivateValue } from './controller.js';
 
 const router = express.Router();
 
 router.post('/create', auth, createGroup);
 router.put('/update', auth, updateGroup);
-router.get('/get', auth,    getGroups);
+router.get('/get', auth, getGroups);
 router.delete('/delete/:groupId', auth, deleteGroup);
 router.get('/details/:groupId', auth, getGroupDetails);
+router.put("/isNotification", auth, setNotificationValue);
+router.put("/isPrivate", auth, setPrivateValue);
 
 export default router;
