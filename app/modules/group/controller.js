@@ -131,14 +131,57 @@ export const getGroupDetails = async (req, res) => {
         if (!group.members.includes(req.user.id)) {
             return sendResponse(res, 403, false, "You are not authorized to view this group");
         }
-        const expenses = await Expense.find({ groupId: group._id }).populate('userId', 'name email profileUrl');
-        group._doc.expenses = expenses;
-        const populatedGroup = await group.populate('members', 'name email profileUrl');
-        return sendResponse(res, 200, true, "Group details fetched successfully", populatedGroup);
 
+        const expenses = await Expense.find({
+            groupId: group._id,
+        }).populate("userId", "name email profileUrl");
+
+        const populatedGroup = await group.populate(
+            "members",
+            "name email profileUrl"
+        );
+
+        // Calculate total spent by each member
+        const members = group.members.map((member) => {
+            const totalSpent = expenses
+                .filter(
+                    (expense) =>
+                        expense.userId?._id?.toString() === member._id.toString()
+                )
+                .reduce((sum, expense) => sum + expense.amount, 0);
+
+            return {
+                id: member._id,
+                name: member.name,
+                email: member.email,
+                profileUrl: member.profileUrl,
+                totalSpent,
+            };
+        }).sort((a, b) => b.totalSpent - a.totalSpent);;
+
+        const responseData = {
+            ...populatedGroup.toObject(),
+            expenses,
+            members,
+        };
+
+        return sendResponse(
+            res,
+            200,
+            true,
+            "Group details fetched successfully",
+            responseData
+        );
     } catch (error) {
         console.error(error);
-        return sendResponse(res, 500, false, "Error fetching group details", null, error.message);
+        return sendResponse(
+            res,
+            500,
+            false,
+            "Error fetching group details",
+            null,
+            error.message
+        );
     }
 };
 
