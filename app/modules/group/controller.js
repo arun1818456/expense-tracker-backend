@@ -232,3 +232,61 @@ export const setPrivateValue = async (req, res) => {
         return sendResponse(res, 500, false, "Error updating private setting", null, error.message);
     }
 };
+
+// ✅ ADD MEMBER TO GROUP
+export const addMember = async (req, res) => {
+    try {
+        console.log("📥 Add member request received:", req.body || {});
+        const { groupId, memberIds } = req.body;
+        if (!groupId || !Array.isArray(memberIds)) {
+            return sendResponse(res, 400, false, "Error adding member: 'groupId' and 'memberIds' are required");
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return sendResponse(res, 404, false, "Group not found");
+        }
+        // Check if the user is a member of the group
+        if (!group.members.includes(req.user.id)) {
+            return sendResponse(res, 403, false, "You are not authorized to update this group");
+        }
+        // Check if each member is already a member of the group
+        for (const memberId of memberIds) {
+            if (group.members.includes(memberId)) {
+                return sendResponse(res, 400, false, `Error adding member: User with ID ${memberId} is already a member of the group`);
+            }
+        }
+        group.members.push(...memberIds);
+        await group.save();
+        const populatedGroup = await group.populate('members', 'name email profileUrl');
+        return sendResponse(res, 200, true, "Member added successfully", populatedGroup);
+    } catch (error) {
+        console.error(error);
+        return sendResponse(res, 500, false, "Error adding member", null, error.message);
+    }
+}
+
+// ✅ EXIT GROUP MEMBER
+export const exitGroupMember = async (req, res) => {
+    try {
+        console.log("📥 Exit group request received:", req.body || {});
+        const { groupId , userId} = req.body;
+        if (!groupId) {
+            return sendResponse(res, 400, false, "Error exiting group: 'groupId' is required");
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return sendResponse(res, 404, false, "Group not found");
+        }  
+        // Check if the user is a member of the group
+        if (!group.members.includes(req.user.id)) {
+            return sendResponse(res, 403, false, "You are not authorized to exit this group");
+        }
+        group.members = group.members.filter(memberId => memberId.toString() !== (userId || req.user.id).toString());
+        await group.save();
+        const populatedGroup = await group.populate('members', 'name email profileUrl');
+        return sendResponse(res, 200, true, "Exited group successfully", populatedGroup);
+    } catch (error) {
+        console.error(error);
+        return sendResponse(res, 500, false, "Error exiting group", null, error.message);
+    }
+};
