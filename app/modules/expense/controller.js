@@ -4,11 +4,11 @@ import { sendResponse } from '../../utils/sendResposeType.js';
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
   try {
-    const { id, title, amount, date, category, paymentType, description ,groupId} = req.body || {};
-    if (!id || !title || !amount || !date || !category || !paymentType ) {
+    const { id, title, amount, date, category, paymentType, description, groupId, groupName } = req.body || {};
+    if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
-    console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, groupId, userId: req.user.id });
+    console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, groupId, userId: req.user.id, groupName });
     const newExpense = await Expense.create({
       _id: id,
       userId: req.user.id,
@@ -19,6 +19,7 @@ export const createExpense = async (req, res) => {
       paymentType,
       description,
       groupId,
+      groupName
     });
     return sendResponse(res, 200, true, "Expense created successfully", newExpense);
   } catch (error) {
