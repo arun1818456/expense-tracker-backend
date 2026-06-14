@@ -5,7 +5,7 @@ import { sendResponse } from '../../utils/sendResposeType.js';
 export const createExpense = async (req, res) => {
   try {
     const { id, title, amount, date, category, paymentType, description ,groupId} = req.body || {};
-    if (!id || !title || !amount || !date || !category || !paymentType) {
+    if (!id || !title || !amount || !date || !category || !paymentType ) {
       return sendResponse(res, 400, false, "All fields are required");
     }
     console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, groupId, userId: req.user.id });
@@ -31,9 +31,9 @@ export const createExpense = async (req, res) => {
 export const updateExpense = async (req, res) => {
   try {
     console.log("📥 Update expense request received:", req.body || {});
-    const { expenseId, title, amount, date, category, paymentType, description, groupId } = req.body || {};
+    const { id, title, amount, date, category, paymentType, description, groupId } = req.body || {};
 
-    if (!expenseId || !title || !amount || !date || !category || !paymentType) {
+    if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "all fields are required to update expense");
     }
 
@@ -48,7 +48,7 @@ export const updateExpense = async (req, res) => {
       ...(groupId && { groupId }),
     };
 
-    const updatedExpense = await Expense.findByIdAndUpdate(expenseId, updateExpense, { new: true });
+    const updatedExpense = await Expense.findByIdAndUpdate(id, updateExpense, { new: true });
 
     const expenseData = {
       id: updatedExpense._id,

@@ -4,6 +4,7 @@ import { getUniqueName } from "../../utils/getUniqueUserName.js";
 import { jwtTokenGenerator } from "../../utils/generateJWTtoken.js";
 import { sendResponse } from "../../utils/sendResposeType.js";
 import { addExpenseWithoutLogging } from "../../utils/addExpenseWithoutLogging.js";
+import Expense from "../expense/model.js";
 
 // ✅ REGISTER USER
 export const RegisterUser = async (req, res) => {
@@ -35,7 +36,7 @@ export const RegisterUser = async (req, res) => {
       updatedAt: Date.now(),
     });
 
-    addExpenseWithoutLogging(newUser._id, expenseList || []);
+    await addExpenseWithoutLogging(newUser._id, expenseList || []);
 
     const token = jwtTokenGenerator(newUser._id);
     const userObj = newUser.toObject();
@@ -56,7 +57,7 @@ export const RegisterUser = async (req, res) => {
 // ✅ LOGIN USER
 export const loginUser = async (req, res) => {
   try {
-    const { email, password, deviceToken, expenseList } = req.body || {};
+    const { email, password, deviceToken, expenses } = req.body || {};
 
     if (!email || !password) {
       return sendResponse(res, 400, false, "Email and password are required");
@@ -69,16 +70,18 @@ export const loginUser = async (req, res) => {
     if (!isMatch) return sendResponse(res, 400, false, "Invalid email or password");
 
     user.deviceToken = deviceToken || user.deviceToken;
-    user.expenseList = expenseList || user.expenseList;
+    // user.expenseList = expenseList || user.expenseList;
+    await addExpenseWithoutLogging(user._id, expenses || []);
     await user.save();
 
     const token = jwtTokenGenerator(user._id);
     const userObj = user.toObject();
     delete userObj.password;
-
+    const expensesList = await Expense.find({ userId: user._id }).sort({ date: -1 });
     const userData = {
       token,
       ...userObj,
+      expenseList: expensesList || [],
     };
 
     return sendResponse(res, 200, true, "Login successful", userData);
@@ -90,9 +93,13 @@ export const loginUser = async (req, res) => {
 
 // ✅ LOGOUT USER
 export const logoutUser = async (req, res) => {
+  const { expenses = [] } = req.body || {};
   console.log("📥 Logout request received");
   try {
     const userId = req.user.id;
+    // add all expense if not added on db
+    await addExpenseWithoutLogging(userId, expenses || []);
+
     await User.findByIdAndUpdate(userId, { deviceToken: null });
     return sendResponse(res, 200, true, "Logout successful");
   } catch (error) {
@@ -134,7 +141,7 @@ export const googleLoginUser = async (req, res) => {
   console.log("📥 Google login request received:", req.body);
 
   try {
-    let { email, name, profileUrl } = req.body || {};
+    let { email, name, profileUrl, expenses } = req.body || {};
 
     if (!email || !name) {
       return sendResponse(res, 400, false, "Email and name are required");
@@ -145,6 +152,7 @@ export const googleLoginUser = async (req, res) => {
     // 🔎 Check user exists
     let user = await User.findOne({ email });
     const baseUserName = await getUniqueName(name);
+
     // 🔥 If NEW Google user → create new account
     if (!user) {
       user = await User.create({
@@ -158,10 +166,12 @@ export const googleLoginUser = async (req, res) => {
 
     // 🔥 Generate JWT Token
     const token = jwtTokenGenerator(user._id);
+    await addExpenseWithoutLogging(user._id, expenses);
+    const expensesList = await Expense.find({ userId: user._id }).sort({ date: -1 });
+    const userObj = user.toObject();
+    delete userObj.password;
 
-
-
-    return sendResponse(res, 200, true, "Google login successful", { token, ...user.toObject() });
+    return sendResponse(res, 200, true, "Google login successful", { token, ...userObj, expenseList: expensesList || [] });
 
   } catch (error) {
     console.error(error);
