@@ -10,7 +10,7 @@ import Expense from "../expense/model.js";
 export const RegisterUser = async (req, res) => {
   try {
     console.log("📥 Register user request received:", req.body || {});
-    let { name, email, password, profileUrl, expenseList = [] } = req.body;
+    let { name, email, password, profileUrl, deviceToken, expenseList = [] } = req.body;
 
     // sanitize
     email = email?.trim()?.toLowerCase();
@@ -33,6 +33,7 @@ export const RegisterUser = async (req, res) => {
       email,
       password: hashedPassword,
       profileUrl: profileUrl || null,
+      deviceToken: deviceToken || null,
       updatedAt: Date.now(),
     });
 
@@ -141,7 +142,7 @@ export const googleLoginUser = async (req, res) => {
   console.log("📥 Google login request received:", req.body);
 
   try {
-    let { email, name, profileUrl, expenses } = req.body || {};
+    let { email, name, profileUrl, expenses,deviceToken } = req.body || {};
 
     if (!email || !name) {
       return sendResponse(res, 400, false, "Email and name are required");
@@ -159,11 +160,13 @@ export const googleLoginUser = async (req, res) => {
         name,
         userName: baseUserName,
         email,
+        deviceToken: deviceToken || null,
         password: "google_oauth_dummy_passwordW$^%&R^&Y*U(", // dummy password
         profileUrl: profileUrl || null,
       });
     }
-
+    user.deviceToken = deviceToken || user.deviceToken;
+    user.save();
     // 🔥 Generate JWT Token
     const token = jwtTokenGenerator(user._id);
     await addExpenseWithoutLogging(user._id, expenses);
