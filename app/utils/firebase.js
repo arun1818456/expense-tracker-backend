@@ -1,8 +1,15 @@
 import admin from "firebase-admin";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
 
-const serviceAccount = require("./service-account-key.json");
+if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+  throw new Error("FIREBASE_SERVICE_ACCOUNT is not defined");
+}
+
+const serviceAccount = JSON.parse(
+  process.env.FIREBASE_SERVICE_ACCOUNT
+);
+
+serviceAccount.private_key =
+  serviceAccount.private_key.replace(/\\n/g, "\n");
 
 if (!admin.apps.length) {
   admin.initializeApp({

@@ -8,7 +8,9 @@ import dbConnect from "./app/config/dbConnect.js";
 import userRoutes from "./app/modules/user/routes.js";
 import expenseRoutes from "./app/modules/expense/routes.js";
 import groupRoutes from "./app/modules/group/routes.js";
+import notificationRoutes from "./app/modules/notifications/route.js";
 import http from "http";
+import { sendPushNotification } from "./app/utils/sendPush.js";
 mongoose.set("strictQuery", true);
 
 // Initialize app
@@ -23,7 +25,7 @@ dbConnect();
 app.use("/api/user", userRoutes);
 app.use("/api/expense", expenseRoutes);
 app.use("/api/group", groupRoutes);
-
+app.use("/api/v1", notificationRoutes);
 // // ✅ Initialize Socket.io
 const server = http.createServer(app);
 // initSocket(server);
@@ -46,4 +48,31 @@ process.on("unhandledRejection", (err) => {
 
 process.on("uncaughtException", (err) => {
   console.error("❌ Uncaught Exception:", err);
+});
+
+
+
+app.post("/test-push", async (req, res) => {
+  const { token, title, body } = req.body || {};
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      message: "token is required",
+    });
+  }
+
+  try {
+    await sendPushNotification(token, title, body);
+
+    return res.json({
+      success: true,
+      message: "Push notification sent",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send push",
+    });
+  }
 });
