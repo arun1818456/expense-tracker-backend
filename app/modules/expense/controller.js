@@ -1,5 +1,9 @@
-import Expense from './model.js';
+import { sendMultipleNotificationToUsers } from '../../utils/sendPush.js';
 import { sendResponse } from '../../utils/sendResposeType.js';
+import Expense from './model.js';
+import User from '../user/model.js';
+import Group from '../group/model.js';
+import notificationModel from '../notifications/model.js';
 
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
@@ -8,7 +12,7 @@ export const createExpense = async (req, res) => {
     if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
-    console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, groupId, userId: req.user.id, groupName });
+    // console.log("Creating expense with data:", { id, title, amount, date, category, paymentType, description, groupId, userId: req.user.id, groupName });
     const newExpense = await Expense.create({
       _id: id,
       userId: req.user.id,
@@ -21,6 +25,50 @@ export const createExpense = async (req, res) => {
       groupId,
       groupName
     });
+    if (groupId) {
+      const currentUser = await User.findById(req.user.id);
+
+      const group = await Group.findById(groupId);
+
+      if (group) {
+        const memberUsers = await User.find({
+          _id: {
+            $in: group.members,
+            $ne: req.user.id,
+          },
+        });
+
+        const memberTokens = memberUsers
+          .map((user) => user.deviceToken)
+          .filter(Boolean);
+
+        // console.log("Member Tokens:", memberTokens, group.isNotification);
+
+        if (memberTokens.length > 0 && group.isNotification) {
+          await sendMultipleNotificationToUsers(
+            memberTokens,
+            "💸 Expense Added",
+            `${currentUser.name} added ₹${amount} for ${title} in ${group.name}.`,
+            {
+              type: "new_expense",
+              groupId: group._id.toString(),
+              expenseId: newExpense._id.toString(),
+            }
+          );
+        }
+        // Save notification for each member
+        for (const user of memberUsers) {
+          await notificationModel.create({
+            userId: user._id,
+            title: "💸 New Expense Added",
+            message: `${currentUser.name} added ₹${amount} for ${title} in ${group.name}.`,
+            type: "new_expense",
+            groupId: group._id.toString(),
+            expenseId: newExpense._id.toString(),
+          });
+        }
+      }
+    }
     return sendResponse(res, 200, true, "Expense created successfully", newExpense);
   } catch (error) {
     console.error(error);
@@ -31,7 +79,7 @@ export const createExpense = async (req, res) => {
 // ✅ UPDATE EXPENSE
 export const updateExpense = async (req, res) => {
   try {
-    console.log("📥 Update expense request received:", req.body || {});
+    // console.log("📥 Update expense request received:", req.body || {});
     const { id, title, amount, date, category, paymentType, description, groupId } = req.body || {};
 
     if (!id || !title || !amount || !date || !category || !paymentType) {
@@ -73,7 +121,7 @@ export const updateExpense = async (req, res) => {
 // ✅ DELETE EXPENSE
 export const deleteExpense = async (req, res) => {
   try {
-    console.log("📥 Delete expense request received:", req.body || {});
+    // console.log("📥 Delete expense request received:", req.body || {});
     const { expenseId } = req.params || {};
 
     if (!expenseId) {

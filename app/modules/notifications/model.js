@@ -25,6 +25,8 @@ const notificationModel = new mongoose.Schema({
         type: String,
         default: "INFO"
     }
+}, {
+    versionKey: false,
 });
 
 export default mongoose.model("notifications", notificationModel);
