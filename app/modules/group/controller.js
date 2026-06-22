@@ -266,6 +266,7 @@ export const setPrivateValue = async (req, res) => {
 // ✅ ADD MEMBER TO GROUP
 export const addMember = async (req, res) => {
     try {
+        const currentUser = await User.findById(req.user.id);
         console.log("📥 Add member request received:", req.body || {});
         const { groupId, memberIds } = req.body;
         if (!groupId || !Array.isArray(memberIds)) {
@@ -285,6 +286,31 @@ export const addMember = async (req, res) => {
                 return sendResponse(res, 400, false, `Error adding member: User with ID ${memberId} is already a member of the group`);
             }
         }
+       //send push notification to the new members
+        const memberUsers = await User.find({ _id: { $in: memberIds } });
+        const memberTokens = memberUsers.map(user => user.deviceToken).filter(token => token);
+        if (memberTokens.length > 0) {
+            console.log("Sending push notification to tokens:", memberTokens);
+            sendMultipleNotificationToUsers(
+                memberTokens,
+                "Added to Group",
+                `You have been added to the group ${group.name} by ${currentUser.name}`,
+                {
+                    type: "added_to_group",
+                    groupId: group._id.toString()
+                }
+            );
+        }
+        // create a notification for the new members
+        for (const user of memberUsers) {
+             await notificationModel.create({
+                userId: user._id,
+                title: "Added to Group",
+                message: `You have been added to the group ${group.name} by ${req.user.name}`,
+                type: "added_to_group",
+            });
+        }
+            
         group.members.push(...memberIds);
         await group.save();
         const populatedGroup = await group.populate('members', 'name email profileUrl');

@@ -8,7 +8,7 @@ import notificationModel from '../notifications/model.js';
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
   try {
-    const { id, title, amount, date, category, paymentType, description, groupId, groupName } = req.body || {};
+    const { id, title, amount, date, category, paymentType, description, groupId, groupName ,currency } = req.body || {};
     if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
@@ -23,7 +23,7 @@ export const createExpense = async (req, res) => {
       paymentType,
       description,
       groupId,
-      groupName
+      groupName,
     });
     if (groupId) {
       const currentUser = await User.findById(req.user.id);
@@ -48,7 +48,7 @@ export const createExpense = async (req, res) => {
           await sendMultipleNotificationToUsers(
             memberTokens,
             "💸 Expense Added",
-            `${currentUser.name} added ₹${amount} for ${title} in ${group.name}.`,
+            `${currentUser.name} added ${currency} ${amount} for ${title} in ${group.name}.`,
             {
               type: "new_expense",
               groupId: group._id.toString(),
@@ -61,7 +61,7 @@ export const createExpense = async (req, res) => {
           await notificationModel.create({
             userId: user._id,
             title: "💸 New Expense Added",
-            message: `${currentUser.name} added ₹${amount} for ${title} in ${group.name}.`,
+            message: `${currentUser.name} added ${currency} ${amount} for ${title} in ${group.name}.`,
             type: "new_expense",
             groupId: group._id.toString(),
             expenseId: newExpense._id.toString(),
