@@ -114,12 +114,12 @@ export const updateUser = async (req, res) => {
   try {
     const userId = req.user.id;
     console.log("📥 Update user request received:", req.body || {});
+
     const { name, profileUrl } = req.body || {};
 
     if (!name) {
       return sendResponse(res, 400, false, "Name is required to update");
     }
-
 
     const updateData = {
       ...(name && { name }),
@@ -127,14 +127,32 @@ export const updateUser = async (req, res) => {
       updatedAt: Date.now(),
     };
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { returnDocument: "after" }
+    );
+
     const userObj = updatedUser.toObject();
     delete userObj.password;
 
-    return sendResponse(res, 200, true, "User updated successfully", ...userObj);
+    return sendResponse(
+      res,
+      200,
+      true,
+      "User updated successfully",
+      userObj
+    );
   } catch (error) {
     console.error(error);
-    return sendResponse(res, 500, false, "Error updating user", null, error.message);
+    return sendResponse(
+      res,
+      500,
+      false,
+      "Error updating user",
+      null,
+      error.message
+    );
   }
 };
 // ✅ GOOGLE LOGIN USER

@@ -30,7 +30,7 @@ export default function auth(req, res, next) {
 
     return res.status(401).json({
       success: false,
-      message: "Invalid token",
+      message: "Please authenticate",
     });
   }
 }
