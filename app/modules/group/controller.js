@@ -3,16 +3,22 @@ import Group from "./model.js";
 import { sendResponse } from "../../utils/sendResposeType.js";
 import e from "express";
 import Expense from "../expense/model.js";
+import User from "../user/model.js";
+import { sendMultipleNotificationToUsers } from "../../utils/sendPush.js";
+import notificationModel from "../notifications/model.js";
+
+
 // ✅ CREATE GROUP
 export const createGroup = async (req, res) => {
     try {
-        console.log("📥 Create group request received:", req.body || {});
-        console.log("user id is", req.user.id);
+        console.log("📥 Create group request received:");
+       
         let { name, description, members, profileUrl, isPrivate, isNotification } = req.body;
 
         if (!name || members === undefined || !Array.isArray(members)) {
             return sendResponse(res, 400, false, "Error creating group: 'name' and 'members' (array) are required");
         }
+        const currentUser = await User.findById(req.user.id);
         const newGroup = await Group.create({
             name,
             description,
@@ -24,6 +30,30 @@ export const createGroup = async (req, res) => {
         });
 
         const populatedGroup = await newGroup.populate('members', 'name email profileUrl');
+        //send Push Notification For seleced members
+        const memberUsers = await User.find({ _id: { $in: members } });
+        const memberTokens = memberUsers.map(user => user.deviceToken).filter(token => token);
+        if (memberTokens.length > 0) {
+            console.log("Sending push notification to tokens:", memberTokens);
+            sendMultipleNotificationToUsers(
+                memberTokens,
+                "New Group Created",
+                `You have been added to the group ${name} by ${currentUser.name}`,
+                {
+                    type: "group_created",
+                    groupId: newGroup._id.toString()
+                }
+            );
+        }
+        /// create a notification for the members
+        for (const user of memberUsers) {
+             await notificationModel.create({
+                userId: user._id,
+                title: "New Group Created",
+                message: `You have been added to the group ${name} by ${currentUser.name}`,
+                type: "group_created",
+            });
+        }
         return sendResponse(res, 200, true, "Group created successfully", populatedGroup);
     } catch (error) {
         console.error(error);
@@ -236,6 +266,7 @@ export const setPrivateValue = async (req, res) => {
 // ✅ ADD MEMBER TO GROUP
 export const addMember = async (req, res) => {
     try {
+        const currentUser = await User.findById(req.user.id);
         console.log("📥 Add member request received:", req.body || {});
         const { groupId, memberIds } = req.body;
         if (!groupId || !Array.isArray(memberIds)) {
@@ -255,6 +286,31 @@ export const addMember = async (req, res) => {
                 return sendResponse(res, 400, false, `Error adding member: User with ID ${memberId} is already a member of the group`);
             }
         }
+       //send push notification to the new members
+        const memberUsers = await User.find({ _id: { $in: memberIds } });
+        const memberTokens = memberUsers.map(user => user.deviceToken).filter(token => token);
+        if (memberTokens.length > 0) {
+            console.log("Sending push notification to tokens:", memberTokens);
+            sendMultipleNotificationToUsers(
+                memberTokens,
+                "Added to Group",
+                `You have been added to the group ${group.name} by ${currentUser.name}`,
+                {
+                    type: "added_to_group",
+                    groupId: group._id.toString()
+                }
+            );
+        }
+        // create a notification for the new members
+        for (const user of memberUsers) {
+             await notificationModel.create({
+                userId: user._id,
+                title: "Added to Group",
+                message: `You have been added to the group ${group.name} by ${req.user.name}`,
+                type: "added_to_group",
+            });
+        }
+            
         group.members.push(...memberIds);
         await group.save();
         const populatedGroup = await group.populate('members', 'name email profileUrl');
@@ -269,20 +325,24 @@ export const addMember = async (req, res) => {
 export const exitGroupMember = async (req, res) => {
     try {
         console.log("📥 Exit group request received:", req.body || {});
-        const { groupId , userId} = req.body;
+        const { groupId, userId } = req.body;
         if (!groupId) {
             return sendResponse(res, 400, false, "Error exiting group: 'groupId' is required");
         }
         const group = await Group.findById(groupId);
         if (!group) {
             return sendResponse(res, 404, false, "Group not found");
-        }  
+        }
         // Check if the user is a member of the group
         if (!group.members.includes(req.user.id)) {
             return sendResponse(res, 403, false, "You are not authorized to exit this group");
         }
         group.members = group.members.filter(memberId => memberId.toString() !== (userId || req.user.id).toString());
         await group.save();
+        // check if user is last in group then delete group
+        if (group.members.length === 0) {
+            await Group.findByIdAndDelete(groupId);
+        }
         const populatedGroup = await group.populate('members', 'name email profileUrl');
         return sendResponse(res, 200, true, "Exited group successfully", populatedGroup);
     } catch (error) {

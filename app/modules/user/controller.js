@@ -242,8 +242,12 @@ export const searchUser = async (req, res) => {
     if (!query) {
       return sendResponse(res, 400, false, "Search query is required");
     }
+    //search by  email or userName
     const users = await User.find({
-      userName: { $regex: query, $options: "i" },
+      $or: [
+        { email: { $regex: query, $options: "i" } },
+        { userName: { $regex: query, $options: "i" } }
+      ]
     }).select("name email profileUrl userName");
     return sendResponse(res, 200, true, "User search results", users);
   } catch (error) {
