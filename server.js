@@ -11,6 +11,8 @@ import groupRoutes from "./app/modules/group/routes.js";
 import notificationRoutes from "./app/modules/notifications/route.js";
 import http from "http";
 import { sendPushNotification } from "./app/utils/sendPush.js";
+import feedback from "./app/modules/feedback/routes.js";
+
 mongoose.set("strictQuery", true);
 
 // Initialize app
@@ -26,6 +28,9 @@ app.use("/api/user", userRoutes);
 app.use("/api/expense", expenseRoutes);
 app.use("/api/group", groupRoutes);
 app.use("/api/v1", notificationRoutes);
+app.use("/api/v1", feedback);
+
+
 // // ✅ Initialize Socket.io
 const server = http.createServer(app);
 // initSocket(server);

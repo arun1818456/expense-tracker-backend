@@ -164,7 +164,7 @@ export const getGroupDetails = async (req, res) => {
 
         const expenses = await Expense.find({
             groupId: group._id,
-        }).populate("userId", "name email profileUrl");
+        }).populate("userId", "name email profileUrl").sort({ date: -1 });
 
         const populatedGroup = await group.populate(
             "members",
