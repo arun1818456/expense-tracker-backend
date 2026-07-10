@@ -79,25 +79,58 @@ export const createExpense = async (req, res) => {
 // ✅ UPDATE EXPENSE
 export const updateExpense = async (req, res) => {
   try {
-    // console.log("📥 Update expense request received:", req.body || {});
-    const { id, title, amount, date, category, paymentType, description, groupId } = req.body || {};
+    const {
+      id,
+      title,
+      amount,
+      date,
+      category,
+      paymentType,
+      description,
+      groupId,
+      groupName,
+    } = req.body || {};
 
     if (!id || !title || !amount || !date || !category || !paymentType) {
-      return sendResponse(res, 400, false, "all fields are required to update expense");
+      return sendResponse(res, 400, false, "All fields are required to update expense");
     }
 
-
-    const updateExpense = {
-      ...(title && { title }),
-      ...(amount && { amount }),
-      ...(date && { date }),
-      ...(category && { category }),
-      ...(paymentType && { paymentType }),
-      ...(description && { description }),
-      ...(groupId && { groupId }),
+    const updateData = {
+      $set: {
+        ...(title && { title }),
+        ...(amount && { amount }),
+        ...(date && { date }),
+        ...(category && { category }),
+        ...(paymentType && { paymentType }),
+        ...(description !== undefined && { description }),
+      },
+      $unset: {},
     };
 
-    const updatedExpense = await Expense.findByIdAndUpdate(id, updateExpense, { new: true });
+    // Handle groupId
+    if (groupId === null) {
+      updateData.$unset.groupId = "";
+    } else if (groupId !== undefined) {
+      updateData.$set.groupId = groupId;
+    }
+
+    // Handle groupName
+    if (groupName === null) {
+      updateData.$unset.groupName = "";
+    } else if (groupName !== undefined) {
+      updateData.$set.groupName = groupName;
+    }
+
+    // Remove empty operators
+    if (Object.keys(updateData.$unset).length === 0) {
+      delete updateData.$unset;
+    }
+
+    const updatedExpense = await Expense.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
 
     const expenseData = {
       id: updatedExpense._id,
@@ -108,14 +141,27 @@ export const updateExpense = async (req, res) => {
       paymentType: updatedExpense.paymentType,
       description: updatedExpense.description,
       groupId: updatedExpense.groupId,
+      groupName: updatedExpense.groupName,
     };
 
-    return sendResponse(res, 200, true, "Expense updated successfully", expenseData);
+    return sendResponse(
+      res,
+      200,
+      true,
+      "Expense updated successfully",
+      expenseData
+    );
   } catch (error) {
     console.error(error);
-    return sendResponse(res, 500, false, "Error updating expense", null, error.message);
-
-  };
+    return sendResponse(
+      res,
+      500,
+      false,
+      "Error updating expense",
+      null,
+      error.message
+    );
+  }
 };
 
 // ✅ DELETE EXPENSE
