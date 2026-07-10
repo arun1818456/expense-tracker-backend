@@ -8,7 +8,7 @@ import notificationModel from '../notifications/model.js';
 // ✅ CREATE EXPENSE
 export const createExpense = async (req, res) => {
   try {
-    const { id, title, amount, date, category, paymentType, description, groupId, groupName ,currency } = req.body || {};
+    const { id, title, amount, date, category, paymentType, description, groupId, groupName, currency } = req.body || {};
     if (!id || !title || !amount || !date || !category || !paymentType) {
       return sendResponse(res, 400, false, "All fields are required");
     }
@@ -110,15 +110,10 @@ export const updateExpense = async (req, res) => {
     // Handle groupId
     if (groupId === null) {
       updateData.$unset.groupId = "";
+      updateData.$unset.groupName = "";
     } else if (groupId !== undefined) {
       updateData.$set.groupId = groupId;
-    }
-
-    // Handle groupName
-    if (groupName === null) {
-      updateData.$unset.groupName = "";
-    } else if (groupName !== undefined) {
-      updateData.$set.groupName = groupName;
+       updateData.$set.groupName = groupName;
     }
 
     // Remove empty operators
